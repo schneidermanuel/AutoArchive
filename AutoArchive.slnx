@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AutoArchive.Core/AutoArchive.Core.csproj" />
+    <Project Path="src/AutoArchive.Infrastructure/AutoArchive.Infrastructure.csproj" />
+    <Project Path="src/AutoArchive.Worker/AutoArchive.Worker.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/AutoArchive.Core.Tests/AutoArchive.Core.Tests.csproj" />
+    <Project Path="tests/AutoArchive.Infrastructure.Tests/AutoArchive.Infrastructure.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,68 @@
+# No .env file is used. Non-secret values below are substituted from real environment variables that must
+# already be exported in your shell/CI/systemd unit before running `docker compose up` (e.g.
+# `export IMAP_HOST=imap.example.com`). Secrets (passwords) are read from local files via Docker's file-secrets
+# mechanism - create them under ./secrets/ (gitignored) before starting, e.g.:
+#   mkdir -p secrets && echo -n 'the-password' > secrets/imap_password.txt
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    volumes:
+      - ollama-models:/root/.ollama
+    # Uncomment to pass through an NVIDIA GPU:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  ollama-pull:
+    image: ollama/ollama:latest
+    depends_on:
+      - ollama
+    environment:
+      - OLLAMA_HOST=ollama:11434
+    entrypoint: ["sh", "-c", "sleep 3 && ollama pull ${OLLAMA_MODEL:-llama3.1:8b}"]
+    restart: "no"
+
+  autoarchive:
+    build:
+      context: .
+      dockerfile: src/AutoArchive.Worker/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - ollama
+    ports:
+      - "8080:8080"
+    volumes:
+      - ${NEXTCLOUD_ARCHIVE_HOST_PATH}:/archive
+      - autoarchive-data:/data
+    secrets:
+      - imap_password
+      - smtp_password
+    environment:
+      - IMAP__HOST=${IMAP_HOST}
+      - IMAP__USERNAME=${IMAP_USERNAME}
+      - IMAP__PASSWORD_FILE=/run/secrets/imap_password
+      - SMTP__HOST=${SMTP_HOST}
+      - SMTP__USERNAME=${SMTP_USERNAME}
+      - SMTP__PASSWORD_FILE=/run/secrets/smtp_password
+      - SMTP__FROMADDRESS=${SMTP_FROM_ADDRESS}
+      - NOTIFICATIONS__RECIPIENTEMAIL=${NOTIFICATIONS_RECIPIENT_EMAIL}
+      - ARCHIVE__ROOTPATH=/archive
+      - STORAGE__DATABASEPATH=/data/autoarchive.db
+      - OLLAMA__BASEURL=http://ollama:11434
+      - OLLAMA__MODEL=${OLLAMA_MODEL:-llama3.1:8b}
+
+volumes:
+  ollama-models:
+  autoarchive-data:
+
+secrets:
+  imap_password:
+    file: ./secrets/imap_password.txt
+  smtp_password:
+    file: ./secrets/smtp_password.txt
