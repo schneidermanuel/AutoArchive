@@ -2,12 +2,16 @@ using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using AutoArchive.Core.Abstractions;
 using AutoArchive.Core.Options;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace AutoArchive.Infrastructure.Ollama;
 
 /// <summary>Minimal typed client for Ollama's /api/chat endpoint, requesting JSON-formatted output.</summary>
-public sealed class OllamaHttpClient(HttpClient httpClient, IOptions<OllamaOptions> options) : IOllamaClient
+public sealed class OllamaHttpClient(
+    HttpClient httpClient,
+    IOptions<OllamaOptions> options,
+    ILogger<OllamaHttpClient> logger) : IOllamaClient
 {
     public async Task<string> ChatJsonAsync(string systemPrompt, string userPrompt, CancellationToken cancellationToken)
     {
@@ -17,6 +21,10 @@ public sealed class OllamaHttpClient(HttpClient httpClient, IOptions<OllamaOptio
             Format: "json",
             Stream: false,
             Options: new ChatRequestOptions(0.1));
+
+        logger.LogInformation(
+            "Ollama request. Model: {Model}. System prompt:\n{SystemPrompt}\nUser prompt:\n{UserPrompt}",
+            request.Model, systemPrompt, userPrompt);
 
         HttpResponseMessage response;
         try
@@ -33,10 +41,13 @@ public sealed class OllamaHttpClient(HttpClient httpClient, IOptions<OllamaOptio
             throw new OllamaUnavailableException($"Ollama returned HTTP {(int)response.StatusCode}.");
         }
 
+        var rawBody = await response.Content.ReadAsStringAsync(cancellationToken);
+        logger.LogInformation("Ollama response (raw body):\n{RawBody}", rawBody);
+
         ChatResponse? payload;
         try
         {
-            payload = await response.Content.ReadFromJsonAsync<ChatResponse>(cancellationToken);
+            payload = System.Text.Json.JsonSerializer.Deserialize<ChatResponse>(rawBody);
         }
         catch (System.Text.Json.JsonException ex)
         {
