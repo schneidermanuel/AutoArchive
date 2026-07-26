@@ -35,8 +35,12 @@ services:
     group_add:
       - "1000"
     volumes:
-      - ${NEXTCLOUD_ARCHIVE_HOST_PATH}:/archive
-      - autoarchive-data:/data
+      - type: bind
+        source: ${NEXTCLOUD_ARCHIVE_HOST_PATH}
+        target: /archive
+      - type: volume
+        source: autoarchive-data
+        target: /data
     environment:
       - IMAP__HOST=${IMAP_HOST}
       - IMAP__USERNAME=${IMAP_USERNAME}
