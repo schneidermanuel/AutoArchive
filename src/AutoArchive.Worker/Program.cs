@@ -57,7 +57,15 @@ builder.Services.AddHttpClient<IOllamaClient, OllamaHttpClient>((sp, client) =>
     {
         client.BaseAddress = new Uri(sp.GetRequiredService<IOptions<OllamaOptions>>().Value.BaseUrl);
     })
-    .AddStandardResilienceHandler();
+    .AddStandardResilienceHandler(options =>
+    {
+        var timeout = TimeSpan.FromSeconds(
+            builder.Configuration.GetValue($"{OllamaOptions.SectionName}:RequestTimeoutSeconds", 120));
+        options.AttemptTimeout.Timeout = timeout;
+        options.TotalRequestTimeout.Timeout = timeout;
+        options.CircuitBreaker.SamplingDuration = timeout * 2;
+        options.Retry.MaxRetryAttempts = 0;
+    });
 
 builder.Services.AddSingleton<IFolderIndex, FilesystemFolderIndexScanner>();
 builder.Services.AddSingleton<IProcessedMessageStore, SqliteProcessedMessageStore>();
