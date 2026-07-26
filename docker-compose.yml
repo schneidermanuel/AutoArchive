@@ -54,6 +54,7 @@ services:
       - STORAGE__DATABASEPATH=/data/autoarchive.db
       - OLLAMA__BASEURL=http://ollama:11434
       - OLLAMA__MODEL=${OLLAMA_MODEL:-llama3.1:8b}
+      - OLLAMA__REQUESTTIMEOUTSECONDS=${OLLAMA_REQUEST_TIMEOUT_SECONDS:-300}
 
 volumes:
   ollama-models:
