@@ -62,9 +62,9 @@ builder.Services.AddHttpClient<IOllamaClient, OllamaHttpClient>((sp, client) =>
         var timeout = TimeSpan.FromSeconds(
             builder.Configuration.GetValue($"{OllamaOptions.SectionName}:RequestTimeoutSeconds", 120));
         options.AttemptTimeout.Timeout = timeout;
-        options.TotalRequestTimeout.Timeout = timeout;
+        options.TotalRequestTimeout.Timeout = timeout * 2;
         options.CircuitBreaker.SamplingDuration = timeout * 2;
-        options.Retry.MaxRetryAttempts = 0;
+        options.Retry.MaxRetryAttempts = 1;
     });
 
 builder.Services.AddSingleton<IFolderIndex, FilesystemFolderIndexScanner>();
