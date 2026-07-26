@@ -157,7 +157,7 @@ public sealed class MailKitMailboxClient(
         {
             return await extractor.ExtractTextAsync(filePath, cancellationToken);
         }
-        catch (Exception ex) when (ex is IOException or InvalidOperationException)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             logger.LogWarning(ex, "Failed to extract text from attachment {FileName}; continuing without an excerpt.", fileName);
             return null;

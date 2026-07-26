@@ -115,16 +115,14 @@ public sealed class MailProcessingService(
                 message.MessageId);
         }
 
-        if (decision.IsNewFolder)
+        try
         {
-            try
-            {
-                await notificationService.SendNewFolderCreatedNotificationAsync(decision.TargetFolderRelativePath, decision.Reasoning, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Failed to send new-folder notification for {Folder} (best-effort only).", decision.TargetFolderRelativePath);
-            }
+            await notificationService.SendMessageFiledNotificationAsync(
+                message.Subject, decision.TargetFolderRelativePath, decision.IsNewFolder, decision.Reasoning, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to send filed notification for message {MessageId} (best-effort only).", message.MessageId);
         }
     }
 

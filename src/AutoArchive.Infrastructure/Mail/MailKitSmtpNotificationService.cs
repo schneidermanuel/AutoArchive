@@ -7,29 +7,39 @@ using MimeKit;
 
 namespace AutoArchive.Infrastructure.Mail;
 
-/// <summary>Sends the new-folder-created notification via SMTP. Always sent to
+/// <summary>Sends the message-filed notification via SMTP. Always sent to
 /// Notifications:RecipientEmail, never to the polled mailbox - enforced separately at startup validation.</summary>
 public sealed class MailKitSmtpNotificationService(
     IOptions<SmtpOptions> smtpOptions,
     IOptions<NotificationOptions> notificationOptions) : INotificationService
 {
-    public async Task SendNewFolderCreatedNotificationAsync(string folderRelativePath, string reasoning, CancellationToken cancellationToken)
+    public async Task SendMessageFiledNotificationAsync(
+        string messageSubject,
+        string folderRelativePath,
+        bool isNewFolder,
+        string reasoning,
+        CancellationToken cancellationToken)
     {
         var smtp = smtpOptions.Value;
 
         var message = new MimeMessage();
         message.From.Add(MailboxAddress.Parse(smtp.FromAddress));
         message.To.Add(MailboxAddress.Parse(notificationOptions.Value.RecipientEmail));
-        message.Subject = $"AutoArchive created a new folder: {folderRelativePath}";
+        message.Subject = $"AutoArchive filed: {messageSubject}";
+
+        var newFolderNote = isNewFolder
+            ? "\nThis is a new folder - no existing folder matched, so you may want to review/rename it or edit its information.md.\n"
+            : string.Empty;
+
         message.Body = new TextPart("plain")
         {
             Text = $"""
-                AutoArchive created a new folder because no existing folder matched an incoming email.
+                AutoArchive successfully filed an email.
 
+                Subject: {messageSubject}
                 Folder: {folderRelativePath}
                 Reasoning: {reasoning}
-
-                You may want to review/rename it or edit its information.md.
+                {newFolderNote}
                 """,
         };
 
