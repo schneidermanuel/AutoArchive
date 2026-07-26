@@ -32,6 +32,8 @@ services:
     restart: unless-stopped
     depends_on:
       - ollama
+    group_add:
+      - "1000"
     volumes:
       - ${NEXTCLOUD_ARCHIVE_HOST_PATH}:/archive
       - autoarchive-data:/data
