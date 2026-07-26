@@ -1,8 +1,6 @@
-# No .env file is used. Non-secret values below are substituted from real environment variables that must
-# already be exported in your shell/CI/systemd unit before running `docker compose up` (e.g.
-# `export IMAP_HOST=imap.example.com`). Secrets (passwords) are read from local files via Docker's file-secrets
-# mechanism - create them under ./secrets/ (gitignored) before starting, e.g.:
-#   mkdir -p secrets && echo -n 'the-password' > secrets/imap_password.txt
+# No .env file is used. All values below, including passwords, are substituted from real environment
+# variables that must already be exported in your shell/CI/systemd unit before running `docker compose up`
+# (e.g. `export IMAP_HOST=imap.example.com IMAP_PASSWORD=the-password`).
 
 services:
   ollama:
@@ -40,16 +38,13 @@ services:
     volumes:
       - ${NEXTCLOUD_ARCHIVE_HOST_PATH}:/archive
       - autoarchive-data:/data
-    secrets:
-      - imap_password
-      - smtp_password
     environment:
       - IMAP__HOST=${IMAP_HOST}
       - IMAP__USERNAME=${IMAP_USERNAME}
-      - IMAP__PASSWORD_FILE=/run/secrets/imap_password
+      - IMAP__PASSWORD=${IMAP_PASSWORD}
       - SMTP__HOST=${SMTP_HOST}
       - SMTP__USERNAME=${SMTP_USERNAME}
-      - SMTP__PASSWORD_FILE=/run/secrets/smtp_password
+      - SMTP__PASSWORD=${SMTP_PASSWORD}
       - SMTP__FROMADDRESS=${SMTP_FROM_ADDRESS}
       - NOTIFICATIONS__RECIPIENTEMAIL=${NOTIFICATIONS_RECIPIENT_EMAIL}
       - ARCHIVE__ROOTPATH=/archive
@@ -60,9 +55,3 @@ services:
 volumes:
   ollama-models:
   autoarchive-data:
-
-secrets:
-  imap_password:
-    file: ./secrets/imap_password.txt
-  smtp_password:
-    file: ./secrets/smtp_password.txt

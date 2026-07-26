@@ -34,9 +34,6 @@ appsettings.Development.json
 **/.idea/**
 client_secret.json
 
-# AutoArchive: local Docker file-secrets (never commit real credentials)
-/secrets/
-
 # NuGet Packages
 *.nupkg
 # NuGet Symbol Packages

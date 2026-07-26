@@ -5,7 +5,6 @@ using AutoArchive.Infrastructure.Archive;
 using AutoArchive.Infrastructure.FolderIndex;
 using AutoArchive.Infrastructure.Mail;
 using AutoArchive.Infrastructure.Ollama;
-using AutoArchive.Infrastructure.Secrets;
 using AutoArchive.Infrastructure.Storage;
 using AutoArchive.Infrastructure.TextExtraction;
 using AutoArchive.Worker.HealthChecks;
@@ -13,8 +12,6 @@ using AutoArchive.Worker.HostedServices;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
-
-builder.Configuration.AddDockerSecrets();
 
 // Loop-prevention guard: the new-folder notification must never go back to the mailbox being polled,
 // or it would be re-ingested as a new message on the next cycle. Fail fast at startup, not mid-run.
