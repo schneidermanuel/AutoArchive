@@ -10,6 +10,7 @@ using AutoArchive.Infrastructure.TextExtraction;
 using AutoArchive.Worker.HealthChecks;
 using AutoArchive.Worker.HostedServices;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -52,7 +53,10 @@ builder.Services.AddOptions<StorageOptions>()
 
 builder.Services.AddSingleton(TimeProvider.System);
 
-builder.Services.AddHttpClient<IOllamaClient, OllamaHttpClient>()
+builder.Services.AddHttpClient<IOllamaClient, OllamaHttpClient>((sp, client) =>
+    {
+        client.BaseAddress = new Uri(sp.GetRequiredService<IOptions<OllamaOptions>>().Value.BaseUrl);
+    })
     .AddStandardResilienceHandler();
 
 builder.Services.AddSingleton<IFolderIndex, FilesystemFolderIndexScanner>();
