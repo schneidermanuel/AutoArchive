@@ -32,8 +32,6 @@ services:
     restart: unless-stopped
     depends_on:
       - ollama
-    ports:
-      - "8080:8080"
     volumes:
       - ${NEXTCLOUD_ARCHIVE_HOST_PATH}:/archive
       - autoarchive-data:/data
