@@ -22,7 +22,7 @@ public sealed class OllamaHttpClient(
             [new ChatMessage("system", systemPrompt), new ChatMessage("user", userPrompt)],
             Format: JsonDocument.Parse(responseJsonSchema).RootElement,
             Stream: false,
-            Options: new ChatRequestOptions(0.1));
+            Options: new ChatRequestOptions(0.1, options.Value.ContextSizeTokens));
 
         logger.LogInformation(
             "Ollama request. Model: {Model}. System prompt:\n{SystemPrompt}\nUser prompt:\n{UserPrompt}",
@@ -38,13 +38,13 @@ public sealed class OllamaHttpClient(
             throw new OllamaUnavailableException("Could not reach Ollama.", ex);
         }
 
-        if (!response.IsSuccessStatusCode)
-        {
-            throw new OllamaUnavailableException($"Ollama returned HTTP {(int)response.StatusCode}.");
-        }
-
         var rawBody = await response.Content.ReadAsStringAsync(cancellationToken);
         logger.LogInformation("Ollama response (raw body):\n{RawBody}", rawBody);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new OllamaUnavailableException($"Ollama returned HTTP {(int)response.StatusCode}: {rawBody}");
+        }
 
         ChatResponse? payload;
         try
@@ -75,7 +75,9 @@ public sealed class OllamaHttpClient(
         [property: JsonPropertyName("role")] string Role,
         [property: JsonPropertyName("content")] string Content);
 
-    private sealed record ChatRequestOptions([property: JsonPropertyName("temperature")] double Temperature);
+    private sealed record ChatRequestOptions(
+        [property: JsonPropertyName("temperature")] double Temperature,
+        [property: JsonPropertyName("num_ctx")] int NumCtx);
 
     private sealed record ChatResponse([property: JsonPropertyName("message")] ChatMessage? Message);
 }

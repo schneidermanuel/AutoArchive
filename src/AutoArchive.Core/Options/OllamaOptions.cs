@@ -26,4 +26,10 @@ public sealed class OllamaOptions
 
     [Range(1, int.MaxValue)]
     public int RequestTimeoutSeconds { get; set; } = 120;
+
+    /// <summary>Ollama's context window size in tokens. The prompt (all candidate folders' information.md content
+    /// plus the email body/attachment excerpts) can easily exceed Ollama's 4096-token default, which makes it
+    /// reject the request outright rather than truncate - so this needs to be set explicitly and generously.</summary>
+    [Range(1, int.MaxValue)]
+    public int ContextSizeTokens { get; set; } = 8192;
 }
