@@ -23,15 +23,12 @@ public sealed class ClassificationService(
             ClassificationPromptBuilder.SystemPrompt, userPrompt, ClassificationResponseParser.ResponseJsonSchema, cancellationToken);
         var result = ClassificationResponseParser.Parse(rawResponse);
 
-        var isConfidentExistingMatch =
-            result.MatchedFolderRelativePath is not null &&
+        if (result.MatchedFolderRelativePath is not null &&
             result.Confidence >= _options.ConfidenceThreshold &&
-            snapshot.Contains(result.MatchedFolderRelativePath);
-
-        if (isConfidentExistingMatch)
+            snapshot.TryResolve(result.MatchedFolderRelativePath, out var resolvedFolderPath))
         {
             return new FilingDecision(
-                result.MatchedFolderRelativePath!,
+                resolvedFolderPath,
                 IsNewFolder: false,
                 NewFolderInformationMd: null,
                 result.ArchiveBodyAsDocument,

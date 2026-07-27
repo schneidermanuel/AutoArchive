@@ -69,11 +69,12 @@ public static class ClassificationResponseParser
             confidence,
             dto.Reasoning ?? string.Empty,
             dto.ArchiveBodyAsDocument,
-            NullIfBlank(dto.SuggestedNewFolderName),
-            NullIfBlank(dto.SuggestedNewFolderInformationMd));
+            NullIfBlankOrNone(dto.SuggestedNewFolderName),
+            NullIfBlankOrNone(dto.SuggestedNewFolderInformationMd));
     }
 
-    private static string? NullIfBlank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
+    private static string? NullIfBlankOrNone(string? value) =>
+        string.IsNullOrWhiteSpace(value) || value.Trim().Equals("NONE", StringComparison.OrdinalIgnoreCase) ? null : value;
 
     private static string StripCodeFences(string text)
     {
