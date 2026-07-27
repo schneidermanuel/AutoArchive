@@ -6,6 +6,30 @@ namespace AutoArchive.Core.Classification;
 
 public static class ClassificationResponseParser
 {
+    /// <summary>JSON Schema for Ollama's structured-output "format" field, constraining replies to exactly the
+    /// shape the Dto below expects - keep the property names in sync with Dto's JsonPropertyName attributes.</summary>
+    public const string ResponseJsonSchema = """
+        {
+          "type": "object",
+          "properties": {
+            "matchedFolderPath": { "type": "string" },
+            "confidence": { "type": "number" },
+            "reasoning": { "type": "string" },
+            "archiveBodyAsDocument": { "type": "boolean" },
+            "suggestedNewFolderName": { "type": "string" },
+            "suggestedNewFolderInformationMd": { "type": "string" }
+          },
+          "required": [
+            "matchedFolderPath",
+            "confidence",
+            "reasoning",
+            "archiveBodyAsDocument",
+            "suggestedNewFolderName",
+            "suggestedNewFolderInformationMd"
+          ]
+        }
+        """;
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,

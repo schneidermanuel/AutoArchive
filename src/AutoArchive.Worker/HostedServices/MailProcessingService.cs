@@ -84,6 +84,14 @@ public sealed class MailProcessingService(
 
         foreach (var attachment in message.Attachments)
         {
+            if (!IsPdfAttachment(attachment))
+            {
+                logger.LogInformation(
+                    "Skipping non-PDF attachment {FileName} ({ContentType}); only PDF attachments are archived.",
+                    attachment.FileName, attachment.ContentType);
+                continue;
+            }
+
             var fileName = CollisionSafeNamer.BuildAttachmentFileName(message.Date, message.Subject, attachment.FileName);
             await archiveWriter.FileAttachmentAsync(decision.TargetFolderRelativePath, fileName, attachment.TempFilePath, cancellationToken);
         }
@@ -125,6 +133,10 @@ public sealed class MailProcessingService(
             logger.LogWarning(ex, "Failed to send filed notification for message {MessageId} (best-effort only).", message.MessageId);
         }
     }
+
+    private static bool IsPdfAttachment(AttachmentContent attachment) =>
+        string.Equals(attachment.ContentType, "application/pdf", StringComparison.OrdinalIgnoreCase) ||
+        attachment.FileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase);
 
     private void TryDeleteTempFile(string path)
     {

@@ -26,7 +26,7 @@ public class ClassificationServiceTests
     {
         var snapshot = new FolderIndexSnapshot([new FolderInfo("Finance/Invoices", "/archive/Finance/Invoices", "Invoices.")]);
         var client = Substitute.For<IOllamaClient>();
-        client.ChatJsonAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+        client.ChatJsonAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns("""{ "matchedFolderPath": "Finance/Invoices", "confidence": 0.9, "reasoning": "match" }""");
 
         var decision = await CreateService(client).ClassifyAsync(SampleMessage, snapshot, CancellationToken.None);
@@ -41,7 +41,7 @@ public class ClassificationServiceTests
     {
         var snapshot = new FolderIndexSnapshot([new FolderInfo("Finance/Invoices", "/archive/Finance/Invoices", "Invoices.")]);
         var client = Substitute.For<IOllamaClient>();
-        client.ChatJsonAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+        client.ChatJsonAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns("""{ "matchedFolderPath": "Finance/Invoices", "confidence": 0.3, "reasoning": "weak match", "suggestedNewFolderName": "Receipts", "suggestedNewFolderInformationMd": "Receipts live here." }""");
 
         var decision = await CreateService(client).ClassifyAsync(SampleMessage, snapshot, CancellationToken.None);
@@ -55,7 +55,7 @@ public class ClassificationServiceTests
     public async Task ClassifyAsync_MatchedPathNotInSnapshot_IsTreatedAsHallucinationAndCreatesNewFolder()
     {
         var client = Substitute.For<IOllamaClient>();
-        client.ChatJsonAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+        client.ChatJsonAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns("""{ "matchedFolderPath": "Nonexistent/Folder", "confidence": 0.95, "reasoning": "hallucinated" }""");
 
         var decision = await CreateService(client).ClassifyAsync(SampleMessage, FolderIndexSnapshot.Empty, CancellationToken.None);
@@ -67,7 +67,7 @@ public class ClassificationServiceTests
     public async Task ClassifyAsync_NoSuggestedName_FallsBackToTimestampedUnsortedName()
     {
         var client = Substitute.For<IOllamaClient>();
-        client.ChatJsonAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+        client.ChatJsonAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns("""{ "matchedFolderPath": "NONE", "confidence": 0, "reasoning": "no match" }""");
 
         var decision = await CreateService(client).ClassifyAsync(SampleMessage, FolderIndexSnapshot.Empty, CancellationToken.None);
@@ -80,7 +80,7 @@ public class ClassificationServiceTests
     {
         var snapshot = new FolderIndexSnapshot([new FolderInfo("Receipts", "/archive/Receipts", "Existing receipts.")]);
         var client = Substitute.For<IOllamaClient>();
-        client.ChatJsonAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+        client.ChatJsonAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns("""{ "matchedFolderPath": "NONE", "confidence": 0, "reasoning": "no match", "suggestedNewFolderName": "Receipts" }""");
 
         var decision = await CreateService(client).ClassifyAsync(SampleMessage, snapshot, CancellationToken.None);

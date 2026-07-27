@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using AutoArchive.Core.Abstractions;
 using AutoArchive.Core.Options;
@@ -7,18 +8,19 @@ using Microsoft.Extensions.Options;
 
 namespace AutoArchive.Infrastructure.Ollama;
 
-/// <summary>Minimal typed client for Ollama's /api/chat endpoint, requesting JSON-formatted output.</summary>
+/// <summary>Minimal typed client for Ollama's /api/chat endpoint, requesting JSON-schema-constrained output.</summary>
 public sealed class OllamaHttpClient(
     HttpClient httpClient,
     IOptions<OllamaOptions> options,
     ILogger<OllamaHttpClient> logger) : IOllamaClient
 {
-    public async Task<string> ChatJsonAsync(string systemPrompt, string userPrompt, CancellationToken cancellationToken)
+    public async Task<string> ChatJsonAsync(
+        string systemPrompt, string userPrompt, string responseJsonSchema, CancellationToken cancellationToken)
     {
         var request = new ChatRequest(
             options.Value.Model,
             [new ChatMessage("system", systemPrompt), new ChatMessage("user", userPrompt)],
-            Format: "json",
+            Format: JsonDocument.Parse(responseJsonSchema).RootElement,
             Stream: false,
             Options: new ChatRequestOptions(0.1));
 
@@ -65,7 +67,7 @@ public sealed class OllamaHttpClient(
     private sealed record ChatRequest(
         [property: JsonPropertyName("model")] string Model,
         [property: JsonPropertyName("messages")] ChatMessage[] Messages,
-        [property: JsonPropertyName("format")] string Format,
+        [property: JsonPropertyName("format")] JsonElement Format,
         [property: JsonPropertyName("stream")] bool Stream,
         [property: JsonPropertyName("options")] ChatRequestOptions Options);
 

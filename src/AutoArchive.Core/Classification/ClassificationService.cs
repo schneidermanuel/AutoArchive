@@ -19,7 +19,8 @@ public sealed class ClassificationService(
         CancellationToken cancellationToken)
     {
         var userPrompt = ClassificationPromptBuilder.BuildUserPrompt(snapshot, message, _options);
-        var rawResponse = await ollamaClient.ChatJsonAsync(ClassificationPromptBuilder.SystemPrompt, userPrompt, cancellationToken);
+        var rawResponse = await ollamaClient.ChatJsonAsync(
+            ClassificationPromptBuilder.SystemPrompt, userPrompt, ClassificationResponseParser.ResponseJsonSchema, cancellationToken);
         var result = ClassificationResponseParser.Parse(rawResponse);
 
         var isConfidentExistingMatch =
