@@ -87,4 +87,30 @@ public class ClassificationServiceTests
 
         Assert.Equal("Receipts_2", decision.TargetFolderRelativePath);
     }
+
+    [Fact]
+    public async Task ClassifyAsync_SuggestedNewFolderNameIsLiteralNone_FallsBackToTimestampedUnsortedName()
+    {
+        var client = Substitute.For<IOllamaClient>();
+        client.ChatJsonAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns("""{ "matchedFolderPath": "NONE", "confidence": 0, "reasoning": "no match", "suggestedNewFolderName": "NONE", "suggestedNewFolderInformationMd": "NONE" }""");
+
+        var decision = await CreateService(client).ClassifyAsync(SampleMessage, FolderIndexSnapshot.Empty, CancellationToken.None);
+
+        Assert.Equal("Unsorted-20260705-120000", decision.TargetFolderRelativePath);
+    }
+
+    [Fact]
+    public async Task ClassifyAsync_SuggestedNewFolderNameIsNestedPath_CreatesNestedFolder()
+    {
+        var snapshot = new FolderIndexSnapshot([new FolderInfo("Reisen", "/archive/Reisen", "One subdirectory per year/trip.")]);
+        var client = Substitute.For<IOllamaClient>();
+        client.ChatJsonAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns("""{ "matchedFolderPath": "NONE", "confidence": 0, "reasoning": "new trip", "suggestedNewFolderName": "Reisen/2026/Rinerhorn", "suggestedNewFolderInformationMd": "Rinerhorn trip 2026." }""");
+
+        var decision = await CreateService(client).ClassifyAsync(SampleMessage, snapshot, CancellationToken.None);
+
+        Assert.True(decision.IsNewFolder);
+        Assert.Equal("Reisen/2026/Rinerhorn", decision.TargetFolderRelativePath);
+    }
 }

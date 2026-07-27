@@ -53,6 +53,41 @@ public class FilenameSanitizerTests
     }
 
     [Fact]
+    public void SanitizeRelativePath_PreservesSlashesBetweenSanitizedSegments()
+    {
+        var result = FilenameSanitizer.SanitizeRelativePath("Reisen/2026/Rinerhorn", "fallback");
+
+        Assert.Equal("Reisen/2026/Rinerhorn", result);
+    }
+
+    [Fact]
+    public void SanitizeRelativePath_SanitizesEachSegmentIndependently()
+    {
+        var result = FilenameSanitizer.SanitizeRelativePath("Reisen/2026\t/Rinerhorn\n", "fallback");
+
+        Assert.Equal("Reisen/2026/Rinerhorn", result);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void SanitizeRelativePath_ReturnsFallback_WhenCandidateIsBlank(string? candidate)
+    {
+        var result = FilenameSanitizer.SanitizeRelativePath(candidate, "fallback");
+
+        Assert.Equal("fallback", result);
+    }
+
+    [Fact]
+    public void SanitizeRelativePath_ReturnsFallback_WhenAnySegmentIsPathTraversal()
+    {
+        var result = FilenameSanitizer.SanitizeRelativePath("Reisen/../etc", "fallback");
+
+        Assert.Equal("fallback", result);
+    }
+
+    [Fact]
     public void Slugify_LowercasesAndReplacesNonAlphanumericWithDashes()
     {
         var result = FilenameSanitizer.Slugify("Q1 2026 Invoice: Amazon!!");

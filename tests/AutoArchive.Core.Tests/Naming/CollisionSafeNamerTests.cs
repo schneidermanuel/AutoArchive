@@ -51,4 +51,14 @@ public class CollisionSafeNamerTests
 
         Assert.Equal("Invoices_2", result);
     }
+
+    [Fact]
+    public void ResolveCollision_OnNestedPathCollision_SuffixesOnlyTheLastSegment()
+    {
+        var existing = new HashSet<string> { "Reisen/2026/Rinerhorn" };
+
+        var result = CollisionSafeNamer.ResolveCollision("Reisen/2026/Rinerhorn", existing.Contains);
+
+        Assert.Equal("Reisen/2026/Rinerhorn_2", result);
+    }
 }

@@ -11,11 +11,24 @@ public static class ClassificationPromptBuilder
         folders (each with a path and a description of what belongs in it, taken from that folder's
         information.md file) and the content of one incoming email, possibly with attachments.
 
-        Decide which single candidate folder the email/attachments belong in. Only choose a folder from the
-        given list, using its exact path. If none of the folders are a good fit, respond with "NONE" as the
-        matchedFolderPath and instead propose a short, filesystem-safe name for a brand new folder that should
-        be created, plus a concise information.md description for it (written the same way the existing
-        folders' descriptions are written, so future emails can be matched against it).
+        Decide which single candidate folder the email/attachments belong in.
+
+        matchedFolderPath MUST be copied character-for-character from the given candidate list's paths (the
+        part before the colon on each line) - never invent, guess, or construct a path yourself, even if a
+        folder's own description mentions an internal structure (e.g. "one subdirectory per year, one per
+        trip"). If a folder's description happens to contain a path-like string (e.g. a note about where it
+        used to live), ignore that and use only the path given in the candidate list itself. If the specific
+        matching folder does not literally appear in the candidate list, this is NOT a match - treat it the
+        same as "no existing folder fits" below, even if a *parent* category exists.
+
+        If none of the folders are a good fit, respond with "NONE" as the matchedFolderPath and instead
+        propose a new folder to create, plus a concise information.md description for it (written the same
+        way the existing folders' descriptions are written, so future emails can be matched against it).
+        This new folder can be nested under an existing candidate folder when that folder's description
+        calls for it (e.g. proposing "Reisen/2026/Rinerhorn" as suggestedNewFolderName when "Reisen" is an
+        existing candidate whose description says it holds one subdirectory per year/trip, and no folder for
+        this specific trip exists yet) - use "/" to separate segments in that case. For an entirely new,
+        unrelated category, propose a short flat top-level name instead.
 
         Independently, decide whether the plain email body text itself (as opposed to just attachments)
         contains information worth keeping as its own document - e.g. a forwarded email with no attachment but
@@ -24,12 +37,12 @@ public static class ClassificationPromptBuilder
         Respond with ONLY a single JSON object, no markdown fences, no extra commentary, matching exactly this
         shape:
         {
-          "matchedFolderPath": "<one of the given candidate paths, or the literal string \"NONE\">",
+          "matchedFolderPath": "<one of the given candidate paths, copied exactly, or the literal string \"NONE\">",
           "confidence": <number between 0.0 and 1.0, how confident you are in matchedFolderPath>,
           "reasoning": "<one short sentence explaining the decision>",
           "archiveBodyAsDocument": <true or false>,
-          "suggestedNewFolderName": "<short folder name if matchedFolderPath is NONE, otherwise null>",
-          "suggestedNewFolderInformationMd": "<information.md content if matchedFolderPath is NONE, otherwise null>"
+          "suggestedNewFolderName": "<short folder name (optionally nested with '/') if matchedFolderPath is NONE, otherwise the literal string \"NONE\">",
+          "suggestedNewFolderInformationMd": "<information.md content if matchedFolderPath is NONE, otherwise the literal string \"NONE\">"
         }
         """;
 

@@ -37,11 +37,11 @@ public sealed class ClassificationService(
         }
 
         var fallbackName = $"Unsorted-{timeProvider.GetUtcNow():yyyyMMdd-HHmmss}";
-        var sanitizedName = FilenameSanitizer.Sanitize(result.SuggestedNewFolderName, fallbackName);
+        var sanitizedName = FilenameSanitizer.SanitizeRelativePath(result.SuggestedNewFolderName, fallbackName);
         var finalName = CollisionSafeNamer.ResolveCollision(sanitizedName, snapshot.Contains);
 
         var informationMd = string.IsNullOrWhiteSpace(result.SuggestedNewFolderInformationMd)
-            ? $"# {finalName}\n\nAuto-created by AutoArchive. No description was proposed for this folder yet."
+            ? $"# {finalName.Split('/')[^1]}\n\nAuto-created by AutoArchive. No description was proposed for this folder yet."
             : result.SuggestedNewFolderInformationMd;
 
         return new FilingDecision(
