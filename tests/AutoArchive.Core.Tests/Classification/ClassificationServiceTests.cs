@@ -113,4 +113,18 @@ public class ClassificationServiceTests
         Assert.True(decision.IsNewFolder);
         Assert.Equal("Reisen/2026/Rinerhorn", decision.TargetFolderRelativePath);
     }
+
+    [Fact]
+    public async Task ClassifyAsync_ModelPutsUnresolvedTargetInMatchedPathInsteadOfSuggestedName_UsesItsLeafSegment()
+    {
+        var snapshot = new FolderIndexSnapshot([new FolderInfo("Reisen", "/archive/Reisen", "One subdirectory per year/trip.")]);
+        var client = Substitute.For<IOllamaClient>();
+        client.ChatJsonAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns("""{ "matchedFolderPath": "/Dossier/Reisen/2026/Rinerhorn", "confidence": 0.98, "reasoning": "confused protocol", "suggestedNewFolderName": "NONE", "suggestedNewFolderInformationMd": "NONE" }""");
+
+        var decision = await CreateService(client).ClassifyAsync(SampleMessage, snapshot, CancellationToken.None);
+
+        Assert.True(decision.IsNewFolder);
+        Assert.Equal("Rinerhorn", decision.TargetFolderRelativePath);
+    }
 }

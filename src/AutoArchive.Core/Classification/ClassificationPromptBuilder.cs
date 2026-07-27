@@ -25,10 +25,23 @@ public static class ClassificationPromptBuilder
         propose a new folder to create, plus a concise information.md description for it (written the same
         way the existing folders' descriptions are written, so future emails can be matched against it).
         This new folder can be nested under an existing candidate folder when that folder's description
-        calls for it (e.g. proposing "Reisen/2026/Rinerhorn" as suggestedNewFolderName when "Reisen" is an
-        existing candidate whose description says it holds one subdirectory per year/trip, and no folder for
-        this specific trip exists yet) - use "/" to separate segments in that case. For an entirely new,
-        unrelated category, propose a short flat top-level name instead.
+        calls for it - use "/" to separate segments in that case. For an entirely new, unrelated category,
+        propose a short flat top-level name instead.
+
+        Worked example of the nested case: candidate list contains "Reisen: one subdirectory per year, then
+        one per trip", and there is no candidate folder for a Rinerhorn trip in 2026. Even though you know
+        exactly where this belongs conceptually, no such folder exists yet, so this is NOT a match:
+        {
+          "matchedFolderPath": "NONE",
+          "confidence": 0.0,
+          "reasoning": "No existing folder for this specific trip; proposing a new one nested under Reisen.",
+          "archiveBodyAsDocument": false,
+          "suggestedNewFolderName": "Reisen/2026/Rinerhorn",
+          "suggestedNewFolderInformationMd": "# Rinerhorn 2026\n\nDocuments for the 2026 Rinerhorn trip."
+        }
+        Do NOT put "Reisen/2026/Rinerhorn" (or any path built the same way) into matchedFolderPath just
+        because you're confident about where it belongs - matchedFolderPath is ONLY for paths that already
+        exist verbatim in the candidate list above.
 
         Independently, decide whether the plain email body text itself (as opposed to just attachments)
         contains information worth keeping as its own document - e.g. a forwarded email with no attachment but

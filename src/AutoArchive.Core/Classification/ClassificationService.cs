@@ -36,8 +36,14 @@ public sealed class ClassificationService(
                 result.Reasoning);
         }
 
+        // Models sometimes ignore the NONE+suggestedNewFolderName protocol and instead put their intended
+        // target straight into matchedFolderPath even though it doesn't exist yet (it failed to resolve above).
+        // Falling back to its leaf segment beats a generic timestamped name in that case.
+        var suggestedName = result.SuggestedNewFolderName ??
+            result.MatchedFolderRelativePath?.TrimEnd('/').Split('/').LastOrDefault(s => s.Length > 0);
+
         var fallbackName = $"Unsorted-{timeProvider.GetUtcNow():yyyyMMdd-HHmmss}";
-        var sanitizedName = FilenameSanitizer.SanitizeRelativePath(result.SuggestedNewFolderName, fallbackName);
+        var sanitizedName = FilenameSanitizer.SanitizeRelativePath(suggestedName, fallbackName);
         var finalName = CollisionSafeNamer.ResolveCollision(sanitizedName, snapshot.Contains);
 
         var informationMd = string.IsNullOrWhiteSpace(result.SuggestedNewFolderInformationMd)
