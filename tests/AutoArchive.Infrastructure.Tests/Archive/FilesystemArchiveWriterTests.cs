@@ -83,6 +83,50 @@ public class FilesystemArchiveWriterTests : IDisposable
         Assert.Equal("# Forwarded note\n\nHello.", await File.ReadAllTextAsync(destinationPath));
     }
 
+    [Fact]
+    public async Task FileAttachmentAsync_IdenticalExistingFile_IsSkippedWithoutError()
+    {
+        var writer = CreateWriter();
+        var sourcePath = Path.Combine(Path.GetTempPath(), $"autoarchive-source-{Guid.NewGuid():N}.txt");
+        await File.WriteAllTextAsync(sourcePath, "same");
+
+        try
+        {
+            await writer.FileAttachmentAsync("Finance", "file.txt", sourcePath, CancellationToken.None);
+            await writer.FileAttachmentAsync("Finance", "file.txt", sourcePath, CancellationToken.None);
+
+            Assert.Single(Directory.GetFileSystemEntries(Path.Combine(_root, "Finance")));
+        }
+        finally
+        {
+            File.Delete(sourcePath);
+        }
+    }
+
+    [Fact]
+    public async Task FileAttachmentAsync_DifferentExistingFile_GetsNumericSuffix()
+    {
+        var writer = CreateWriter();
+        var first = Path.Combine(Path.GetTempPath(), $"autoarchive-source-{Guid.NewGuid():N}.txt");
+        var second = Path.Combine(Path.GetTempPath(), $"autoarchive-source-{Guid.NewGuid():N}.txt");
+        await File.WriteAllTextAsync(first, "one");
+        await File.WriteAllTextAsync(second, "two");
+
+        try
+        {
+            await writer.FileAttachmentAsync("Finance", "file.txt", first, CancellationToken.None);
+            await writer.FileAttachmentAsync("Finance", "file.txt", second, CancellationToken.None);
+
+            Assert.Equal("one", await File.ReadAllTextAsync(Path.Combine(_root, "Finance", "file.txt")));
+            Assert.Equal("two", await File.ReadAllTextAsync(Path.Combine(_root, "Finance", "file_2.txt")));
+        }
+        finally
+        {
+            File.Delete(first);
+            File.Delete(second);
+        }
+    }
+
     private FilesystemArchiveWriter CreateWriter() =>
         new(Options.Create(new ArchiveOptions { RootPath = _root, InformationFileName = "information.md" }));
 

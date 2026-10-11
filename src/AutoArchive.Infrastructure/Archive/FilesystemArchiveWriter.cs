@@ -1,4 +1,5 @@
 using AutoArchive.Core.Abstractions;
+using AutoArchive.Core.Naming;
 using AutoArchive.Core.Options;
 using Microsoft.Extensions.Options;
 
@@ -41,7 +42,6 @@ public sealed class FilesystemArchiveWriter(IOptions<ArchiveOptions> options) : 
     {
         var folderPath = EnsureFolder(folderRelativePath);
 
-        var destinationPath = Path.Combine(folderPath, safeFileName);
         var stagingPath = StagingPathFor(folderPath, safeFileName);
 
         await using (var source = File.OpenRead(sourceTempFilePath))
@@ -50,20 +50,83 @@ public sealed class FilesystemArchiveWriter(IOptions<ArchiveOptions> options) : 
             await source.CopyToAsync(destination, cancellationToken);
         }
 
-        File.Move(stagingPath, destinationPath, overwrite: false);
-        File.SetUnixFileMode(destinationPath, FilePermissions);
+        PlaceStagedFile(folderPath, safeFileName, stagingPath);
     }
 
     public async Task FileBodyDocumentAsync(string folderRelativePath, string safeFileName, string content, CancellationToken cancellationToken)
     {
         var folderPath = EnsureFolder(folderRelativePath);
 
-        var destinationPath = Path.Combine(folderPath, safeFileName);
         var stagingPath = StagingPathFor(folderPath, safeFileName);
 
         await File.WriteAllTextAsync(stagingPath, content, cancellationToken);
-        File.Move(stagingPath, destinationPath, overwrite: false);
-        File.SetUnixFileMode(destinationPath, FilePermissions);
+        PlaceStagedFile(folderPath, safeFileName, stagingPath);
+    }
+
+    /// <summary>Moves the staged file to its final name. If that name is taken by a file with identical content
+    /// (e.g. a retry after an earlier cycle failed later in the pipeline) the staged copy is simply dropped; if the
+    /// content differs (e.g. two same-named attachments in one mail) a numeric suffix is appended instead of failing.</summary>
+    private static void PlaceStagedFile(string folderPath, string safeFileName, string stagingPath)
+    {
+        try
+        {
+            while (true)
+            {
+                var candidateName = CollisionSafeNamer.ResolveCollision(
+                    safeFileName, name => File.Exists(Path.Combine(folderPath, name)) && !HasSameContent(Path.Combine(folderPath, name), stagingPath));
+                var destinationPath = Path.Combine(folderPath, candidateName);
+
+                if (File.Exists(destinationPath))
+                {
+                    return; // identical content already archived
+                }
+
+                try
+                {
+                    File.Move(stagingPath, destinationPath, overwrite: false);
+                }
+                catch (IOException) when (File.Exists(destinationPath))
+                {
+                    continue; // lost a race with another writer; re-resolve
+                }
+
+                File.SetUnixFileMode(destinationPath, FilePermissions);
+                return;
+            }
+        }
+        finally
+        {
+            if (File.Exists(stagingPath))
+            {
+                File.Delete(stagingPath);
+            }
+        }
+    }
+
+    private static bool HasSameContent(string pathA, string pathB)
+    {
+        var infoA = new FileInfo(pathA);
+        var infoB = new FileInfo(pathB);
+        if (infoA.Length != infoB.Length)
+        {
+            return false;
+        }
+
+        using var a = infoA.OpenRead();
+        using var b = infoB.OpenRead();
+        var bufferA = new byte[81920];
+        var bufferB = new byte[81920];
+        int read;
+        while ((read = a.Read(bufferA, 0, bufferA.Length)) > 0)
+        {
+            b.ReadExactly(bufferB, 0, read);
+            if (!bufferA.AsSpan(0, read).SequenceEqual(bufferB.AsSpan(0, read)))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /// <summary>Creates (if missing) every directory level of the relative path and enforces
