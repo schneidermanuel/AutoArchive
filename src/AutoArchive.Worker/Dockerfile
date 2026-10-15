@@ -6,8 +6,9 @@ RUN dotnet publish src/AutoArchive.Worker/AutoArchive.Worker.csproj -c Release -
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 COPY --from=build /app/publish .
-# Fixed UID/GID 1000 so it matches `user: 1000:1000` in compose and a fresh /data volume inherits the right owner.
-RUN groupadd -g 1000 appuser && useradd -m -u 1000 -g 1000 appuser && mkdir -p /data && chown -R appuser:appuser /data /app
-USER appuser
+# Numeric UID/GID 1000 (the base image may already own that ID under another name) so it matches
+# `user: 1000:1000` in compose and a fresh /data volume inherits the right owner.
+RUN mkdir -p /data && chown -R 1000:1000 /data /app
+USER 1000:1000
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "AutoArchive.Worker.dll"]
